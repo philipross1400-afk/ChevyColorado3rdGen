@@ -1,4 +1,4 @@
-# Colorado Dashboard v0.6
+# Chevy Colorado Dashboard v0.6
 
 A Windows Python dashboard and offline recording viewer developed with a 2023 Chevrolet Colorado and OBDLink MX+.
 
