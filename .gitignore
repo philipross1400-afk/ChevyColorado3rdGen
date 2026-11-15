@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+dashboard_logs/
+logs/
+sensors.csv
+raw.jsonl
+session.json
+tcm_inventory.json
+build/
+dist/
+*.spec
+*.exe
+*.zip
