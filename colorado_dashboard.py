@@ -11,8 +11,10 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 import colorado_readonly as obd
-from app_paths import logs_directory
+from app_paths import logs_directory, app_directory
 from colorado_log_viewer import LogReview
+from colorado_features import (PRESETS, UNVERIFIED, gauge_catalog, normalize_layout,
+                               read_json, write_json, append_marker, usable)
 
 # PID: label, units, byte count, conversion, polling interval seconds
 SENSORS = {
@@ -315,7 +317,11 @@ class Dashboard:
         self.process = None
         self.logs = []
         self.values = {}
-        root.title("Colorado • Dashboard & Log Review v0.6")
+        self.session_folder = None
+        self.catalog = gauge_catalog(SENSORS)
+        self.layout_path = app_directory() / "dashboard_settings.json"
+        self.layout = normalize_layout(read_json(self.layout_path), self.catalog)
+        root.title("Colorado • Dashboard & Recordings v0.7")
         root.geometry("1180x900")
         root.minsize(1000, 800)
         root.configure(bg=BG)
@@ -343,21 +349,30 @@ class Dashboard:
         tabs.add(outer, text="Live Dashboard")
         self.log_review = LogReview(tabs)
         tabs.add(self.log_review, text="Log Review")
+        capability = ttk.Frame(tabs, padding=18)
+        tabs.add(capability, text="Vehicle Capabilities")
+        ttk.Label(capability, text="VEHICLE / CAPABILITIES", font=("Segoe UI", 23, "bold"), foreground=TEXT).pack(anchor="w")
+        self.capability_info = tk.StringVar(value="No discovery this session. Connect to read ECM identity and advertised PID support.")
+        ttk.Label(capability, textvariable=self.capability_info, wraplength=1000).pack(anchor="w", pady=12)
+        ttk.Label(capability, text="Parent PID support does not guarantee an extended sensor channel is present. Channel flags and sample quality appear after polling.", wraplength=1000).pack(anchor="w")
+        self.capabilities = ttk.Treeview(capability, columns=("pid", "support", "quality"), height=24)
+        self.capabilities.heading("#0", text="Signal")
+        for key, label in (("pid", "Source PID"), ("support", "Discovery / polling"), ("quality", "Latest sample quality")):
+            self.capabilities.heading(key, text=label)
+        self.capabilities.column("#0", width=260)
+        self.capabilities.column("pid", width=110)
+        self.capabilities.pack(fill="both", expand=True, pady=12)
+        for pid, spec in SENSORS.items():
+            self.capabilities.insert("", "end", iid=str(pid), text=spec[0], values=(f"01{pid if pid < 256 else pid >> 8:02X}", "Not checked", "—"))
+        for index, label in enumerate(UNVERIFIED):
+            self.capabilities.insert("", "end", iid=f"unverified{index}", text=label, values=("—", "Definition unverified", "Unavailable"))
         ttk.Label(outer, text="COLORADO  /  LIVE", foreground=TEXT, font=("Segoe UI", 23, "bold")).pack(anchor="w")
-        ttk.Label(outer, text="Read-only monitoring  •  Recorded values remain unvalidated  •  v0.6").pack(anchor="w", pady=(0, 12))
-        gauge_row = ttk.Frame(outer)
-        gauge_row.pack(fill="x", pady=(0, 14))
+        ttk.Label(outer, text="Read-only monitoring  •  Recorded values remain unvalidated  •  v0.7").pack(anchor="w", pady=(0, 6))
+        ttk.Button(outer, text="Customize dashboard…", command=self.customize).pack(anchor="e")
+        self.gauge_row = ttk.Frame(outer)
+        self.gauge_row.pack(fill="x", pady=(0, 14))
         self.gauges = {}
-        for column, (key, title, unit, low, high, color) in enumerate((
-                ("speed", "SPEED", "mph", 0, 120, ACCENT),
-                ("rpm", "ENGINE", "RPM", 0, 6000, ACCENT),
-                ("boost", "BOOST / VACUUM", "psi gauge", -15, 30, "#ffbe68"),
-                ("oil", "OIL PRESSURE", "psi", 0, 100, "#91a9c2"))):
-            gauge_row.columnconfigure(column, weight=1, uniform="dial")
-            dial = Dial(gauge_row, title, unit, low, high, color)
-            dial.grid(row=0, column=column, sticky="ew", padx=(0 if column==0 else 6, 0))
-            self.gauges[key] = dial
-        self.gauges["oil"].update_value(None, "Unavailable • source not verified")
+        self.build_gauges()
         bar = ttk.Frame(outer)
         bar.pack(fill="x")
         ttk.Label(bar, text="Outgoing port").pack(side="left")
@@ -382,6 +397,19 @@ class Dashboard:
         ttk.Label(settings, text="Notes").pack(side="left")
         self.notes_box = ttk.Entry(settings, textvariable=self.notes, width=28)
         self.notes_box.pack(side="left", padx=8)
+        annotations = ttk.Frame(outer)
+        annotations.pack(fill="x", pady=6)
+        self.recording_name = tk.StringVar()
+        ttk.Label(annotations, text="Recording name").pack(side="left")
+        self.name_box = ttk.Entry(annotations, textvariable=self.recording_name, width=28)
+        self.name_box.pack(side="left", padx=8)
+        self.marker_label = tk.StringVar(value="Observation")
+        marker = ttk.Combobox(annotations, textvariable=self.marker_label, values=("Observation", "Hesitation", "Shift", "Temperature rise"), width=20)
+        marker.pack(side="left", padx=8)
+        self.marker_note = tk.StringVar()
+        ttk.Entry(annotations, textvariable=self.marker_note, width=26).pack(side="left", padx=4)
+        self.marker_button = ttk.Button(annotations, text="Mark event", command=self.mark_event, state="disabled")
+        self.marker_button.pack(side="left", padx=4)
         self.check_tcm = tk.BooleanVar(value=True)
         self.tcm_box = ttk.Checkbutton(outer, variable=self.check_tcm, text="Check TCM identity at connect (discovery only; no live slip readings)")
         self.tcm_box.pack(anchor="w")
@@ -419,6 +447,62 @@ class Dashboard:
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(100, self.tick)
 
+    def build_gauges(self):
+        for child in self.gauge_row.winfo_children():
+            child.destroy()
+        self.gauges = {}
+        for column in range(4):
+            self.gauge_row.columnconfigure(column, weight=0)
+        for column, key in enumerate(self.layout["signals"]):
+            title, unit, low, high, _ = self.catalog[key]
+            self.gauge_row.columnconfigure(column, weight=1, uniform="dial")
+            dial = Dial(self.gauge_row, title.upper(), unit, low, high, "#ffbe68" if key == "boost" else ACCENT)
+            dial.config(height=240 if self.layout["large_cards"] else 190)
+            dial.grid(row=0, column=column, sticky="ew", padx=4)
+            self.gauges[key] = dial
+
+    def customize(self):
+        window = tk.Toplevel(self.root)
+        window.title("Dashboard layout")
+        frame = ttk.Frame(window, padding=20)
+        frame.pack(fill="both", expand=True)
+        names = {key: spec[0] for key, spec in self.catalog.items()}
+        reverse = {value: key for key, value in names.items()}
+        choices = [tk.StringVar(value=names.get(key, "Hidden")) for key in self.layout["signals"]]
+        choices += [tk.StringVar(value="Hidden") for _ in range(4-len(choices))]
+        ttk.Label(frame, text="Choose left-to-right order. Hide slots you do not need.").pack(anchor="w")
+        preset = tk.StringVar(value="Everyday")
+        box = ttk.Combobox(frame, textvariable=preset, values=tuple(PRESETS), state="readonly")
+        box.pack(fill="x", pady=8)
+        def use_preset(_):
+            for variable, key in zip(choices, PRESETS[preset.get()]):
+                variable.set(names[key])
+        box.bind("<<ComboboxSelected>>", use_preset)
+        for variable in choices:
+            ttk.Combobox(frame, textvariable=variable, values=("Hidden", *names.values()), state="readonly", width=36).pack(fill="x", pady=4)
+        large = tk.BooleanVar(value=self.layout["large_cards"])
+        ttk.Checkbutton(frame, text="Larger gauge cards", variable=large).pack(anchor="w", pady=8)
+        def save():
+            layout = normalize_layout({"signals": [reverse[v.get()] for v in choices if v.get() in reverse], "large_cards": large.get()}, self.catalog)
+            try:
+                write_json(self.layout_path, layout)
+                self.layout = layout
+                self.build_gauges()
+                window.destroy()
+            except OSError as exc:
+                messagebox.showerror("Could not save layout", str(exc), parent=window)
+        ttk.Button(frame, text="Save layout", command=save).pack(anchor="e", pady=8)
+
+    def mark_event(self):
+        if self.process is None or self.session_folder is None:
+            return
+        try:
+            event = append_marker(self.session_folder, self.marker_label.get(), self.marker_note.get())
+            self.marker_note.set("")
+            self.location.set(f"Event saved: {event['label']} • {self.session_folder}")
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("Could not mark event", str(exc))
+
     def start(self):
         import re
         if not self.ready.get():
@@ -431,11 +515,12 @@ class Dashboard:
         folder = logs_directory() / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         try:
             folder.mkdir(parents=True)
-            metadata = {"app_version": "0.6", "started": datetime.now().astimezone().isoformat(), "port": port,
+            metadata = {"schema_version": 1, "app_version": "0.7", "name": self.recording_name.get().strip(), "started": datetime.now().astimezone().isoformat(), "port": port,
                         "profile": self.profile.get(), "fuel_in_tank": self.fuel.get(), "notes": self.notes.get(),
                         "knock_and_transmission": "Not verified; no enhanced requests sent"}
             metadata["tcm_discovery_enabled"] = self.check_tcm.get()
             (folder / "session.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+            self.session_folder = folder
             self.raw_log = (folder / "raw.jsonl").open("w", encoding="utf-8")
             self.csv_log = (folder / "sensors.csv").open("w", newline="", encoding="utf-8-sig")
             self.logs = [self.raw_log, self.csv_log]
@@ -445,6 +530,10 @@ class Dashboard:
             self.events, self.stop = mp.Queue(), mp.Event()
             self.failure = None
             self.values.clear()
+            self.capability_info.set("Discovering this session's ECM identity and PID support…")
+            for pid in SENSORS:
+                self.capabilities.set(str(pid), "support", "Discovering")
+                self.capabilities.set(str(pid), "quality", "—")
             self.tcm_status.set("TCM: checking at connection" if self.check_tcm.get() else "TCM: check disabled; ECM-only session")
             self.sample_gaps = {}
             self.sample_times = {}
@@ -462,6 +551,8 @@ class Dashboard:
             for control in (self.profile_box, self.fuel_box, self.notes_box):
                 control.config(state="disabled")
             self.stop_button.config(state="normal")
+            self.marker_button.config(state="normal")
+            self.name_box.config(state="disabled")
         except Exception as exc:
             self.finish()
             messagebox.showerror("Could not start", str(exc))
@@ -485,7 +576,10 @@ class Dashboard:
         self.fuel_box.config(state="readonly")
         self.notes_box.config(state="normal")
         self.stop_button.config(state="disabled")
+        self.marker_button.config(state="disabled")
+        self.name_box.config(state="normal")
         self.status.set(text)
+        self.log_review.refresh()
 
     def handle(self, event):
         self.raw_log.write(json.dumps(event) + "\n")
@@ -503,11 +597,16 @@ class Dashboard:
         elif kind == "pressure_capture":
             self.table.item("boost", values=("—", "psi", "Extended MAP logged; pressure decoding pending", "—"))
         elif kind == "inventory":
+            metadata = read_json(self.session_folder / "session.json")
+            metadata["capabilities"] = event
+            write_json(self.session_folder / "session.json", metadata)
+            self.capability_info.set(f"{event['name']} • {event['profile']} • ECM 18DAF111 • saved with this recording")
             active = set(event["active"])
             for pid, spec in SENSORS.items():
                 source_pid = pid if pid < 256 else pid >> 8
                 quality = "Waiting" if pid in active else "Not polled in this profile" if source_pid in event["supported"] else "Not advertised by ECM"
                 self.table.item(str(pid), values=("—", spec[1], quality, "—"))
+                self.capabilities.set(str(pid), "support", quality)
             self.inventory.set(event["name"] + " • advertised PIDs: " + " ".join(f"{p:02X}" for p in event["supported"]))
         elif kind == "sample":
             pid, value = event["pid"], event["value"]
@@ -523,6 +622,7 @@ class Dashboard:
             if rates:
                 self.sampling.set("Measured median interval • " + " | ".join(rates))
             self.values[pid] = (value, time.monotonic(), event["quality"])
+            self.capabilities.set(str(pid), "quality", event["quality"])
             pid_label = f"01{pid:02X}" if pid < 256 else f"01{pid >> 8:02X}/sensor{pid & 255}"
             self.writer.writerow((event["time"], "18DAF111", pid_label, spec[0], "" if value is None else value, spec[1], event["quality"]))
             self.csv_log.flush()
@@ -551,16 +651,21 @@ class Dashboard:
             if self.process is not None and time.monotonic() - self.last_event > 15:
                 self.finish("Stopped • no progress for 15 seconds. Toggle laptop Bluetooth before retrying.")
         now = time.monotonic()
-        for key, pid in (("speed", 0x0D), ("rpm", 0x0C)):
+        for key, dial in self.gauges.items():
+            if key == "boost":
+                derived = boost_value(self.values, now) if self.process is not None else None
+                dial.update_value(derived[0] if derived else None, "Calculated • asynchronous pressure" if derived else "Waiting / unavailable")
+                continue
+            pid = self.catalog[key][4]
             sample = self.values.get(pid)
             if self.process is None:
-                self.gauges[key].update_value(None, "Disconnected")
+                dial.update_value(None, "Disconnected")
             elif sample is None:
-                self.gauges[key].update_value(None, "Waiting for data")
-            elif now-sample[1] > 3 or sample[0] is None:
-                self.gauges[key].update_value(None, "Stale / unavailable")
+                dial.update_value(None, self.table.set(str(pid), "quality"))
+            elif now-sample[1] > max(3, SENSORS[pid][4]*3) or not usable(sample[0], sample[2]):
+                dial.update_value(None, "Stale / " + sample[2])
             else:
-                self.gauges[key].update_value(sample[0], "Live • ECM")
+                dial.update_value(sample[0], f"Unvalidated • {now-sample[1]:.1f}s old")
         for pid, (value, stamp, quality) in self.values.items():
             age = now - stamp
             self.table.set(str(pid), "age", f"{age:.0f} s")
@@ -571,10 +676,8 @@ class Dashboard:
         boost = boost_value(self.values, now) if self.process is not None else None
         if boost is not None:
             self.table.item("boost", values=(f"{boost[0]:.2f}", "psi", "Calculated MAP minus barometric pressure / unvalidated", "—"))
-            self.gauges["boost"].update_value(boost[0], "Calculated • MAP − atmosphere")
         else:
             self.table.item("boost", values=("—", "psi", "Unavailable • needs recent valid pressure inputs", "—"))
-            self.gauges["boost"].update_value(None, "Waiting for valid pressure" if self.process is not None else "Disconnected")
         self.root.after(100, self.tick)
 
     def close(self):

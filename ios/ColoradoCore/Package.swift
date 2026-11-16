@@ -7,6 +7,6 @@ let package = Package(
     products: [.library(name: "ColoradoCore", targets: ["ColoradoCore"])],
     targets: [
         .target(name: "ColoradoCore"),
-        .testTarget(name: "ColoradoCoreTests", dependencies: ["ColoradoCore"], resources: [.copy("desktop-fixtures.json")])
+        .testTarget(name: "ColoradoCoreTests", dependencies: ["ColoradoCore"], resources: [.copy("desktop-fixtures.json"), .copy("session-fixture.json")])
     ]
 )

@@ -13,13 +13,30 @@ final class LiveModel: ObservableObject {
     @Published var csvURL: URL?
     @Published var errorMessage: String?
     @Published var signalStatus: [Int: String] = [:]
+    @Published var capabilities: CapabilitySnapshot?
+    @Published var recordingName = ""
+    @Published var recordingNotes = ""
+    @Published var fuel = "Unknown"
+    @Published var markerLabel = "Observation"
+    @Published var markerNote = ""
+    @Published var markerCount = 0
+    @Published var layout: DashboardLayout {
+        didSet {
+            if let data = try? JSONEncoder().encode(layout) { UserDefaults.standard.set(data, forKey: "dashboard_layout_v1") }
+        }
+    }
     private let transport = AccessoryTransport()
     private var task: Task<Void, Never>?
     private var csv: FileHandle?
     private var rawLog: FileHandle?
+    private var eventLog: FileHandle?
     private var notifications: [NSObjectProtocol] = []
 
     init() {
+        if let data = UserDefaults.standard.data(forKey: "dashboard_layout_v1"),
+           let saved = try? JSONDecoder().decode(DashboardLayout.self, from: data) {
+            layout = DashboardLayout(signals: saved.signals, largeCards: saved.large_cards)
+        } else { layout = DashboardLayout() }
         let manager = EAAccessoryManager.shared()
         manager.registerForLocalNotifications()
         for name in [Notification.Name.EAAccessoryDidConnect, .EAAccessoryDidDisconnect] {
@@ -38,6 +55,7 @@ final class LiveModel: ObservableObject {
     func start(_ accessory: EAAccessory) {
         guard parked, !running else { return }
         running = true; readings = [:]; signalStatus = [:]; csvURL = nil; errorMessage = nil
+        capabilities = nil; markerCount = 0
         status = "Connecting to \(accessory.name)…"
         task = Task {
             do {
@@ -72,6 +90,13 @@ final class LiveModel: ObservableObject {
                 }
                 let intervals = OBD.intervals(support: support, performance: performance)
                 guard !intervals.isEmpty else { throw OBDError.invalid("No implemented sensors advertised by ECM") }
+                let active = Sensor.all.filter { intervals[$0.id < 256 ? $0.id : $0.id >> 8] != nil }.map(\.id)
+                let snapshot = CapabilitySnapshot(name: String(decoding: identity.dropFirst(3).filter { $0 != 0 }, as: UTF8.self),
+                                                  supported: support.sorted(), active: active, profile: performance ? "Performance" : "Overview")
+                capabilities = snapshot
+                if let folder = csvURL?.deletingLastPathComponent() {
+                    try SessionFiles.updateMetadata(folder, values: ["capabilities": JSONSerialization.jsonObject(with: JSONEncoder().encode(snapshot))])
+                }
                 for sensor in Sensor.all {
                     let source = sensor.id < 256 ? sensor.id : sensor.id >> 8
                     signalStatus[sensor.id] = intervals[source] != nil ? "Waiting" :
@@ -115,6 +140,21 @@ final class LiveModel: ObservableObject {
         transport.close()
     }
 
+    func markEvent() {
+        guard running, let eventLog else { return }
+        let event = SessionMarker(label: markerLabel, note: markerNote)
+        guard !event.label.isEmpty else { errorMessage = "Enter an event label"; return }
+        do {
+            var data = try JSONEncoder().encode(event)
+            data.append(10)
+            try eventLog.write(contentsOf: data)
+            markerCount += 1; markerNote = ""
+        } catch {
+            errorMessage = "Could not save event: \(error.localizedDescription)"
+            stop()
+        }
+    }
+
     private func pause(_ seconds: Double) async throws {
         try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
     }
@@ -142,7 +182,11 @@ final class LiveModel: ObservableObject {
         let rawURL = folder.appendingPathComponent("raw.jsonl")
         try Data().write(to: rawURL)
         rawLog = try FileHandle(forWritingTo: rawURL)
-        let metadata: [String: String] = ["app_version": "ios-0.1", "started": timestamp(Date()),
+        let eventURL = folder.appendingPathComponent("events.jsonl")
+        try Data().write(to: eventURL)
+        eventLog = try FileHandle(forWritingTo: eventURL)
+        let metadata: [String: Any] = ["schema_version": 1, "app_version": "ios-0.2", "started": timestamp(Date()),
+            "name": recordingName, "notes": recordingNotes, "fuel_in_tank": fuel,
             "profile": performance ? "Performance" : "Overview", "transport": "ExternalAccessory", "scope": "ECM only; no TCM discovery"]
         try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
             .write(to: folder.appendingPathComponent("session.json"))
@@ -179,10 +223,10 @@ final class LiveModel: ObservableObject {
     }
 
     private func closeRecording() {
-        for handle in [csv, rawLog].compactMap({ $0 }) {
+        for handle in [csv, rawLog, eventLog].compactMap({ $0 }) {
             do { try handle.synchronize(); try handle.close() }
             catch { errorMessage = "Recording close failed: \(error.localizedDescription)" }
         }
-        csv = nil; rawLog = nil
+        csv = nil; rawLog = nil; eventLog = nil
     }
 }

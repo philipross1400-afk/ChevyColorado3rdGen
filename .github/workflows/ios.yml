@@ -1,16 +1,28 @@
-name: iOS checks
+name: Desktop and iOS checks
 
 on:
   push:
-    paths: ["ios/**", ".github/workflows/ios.yml"]
+    branches: [main, master]
+    paths: ["ios/**", "*.py", "tests/**", ".github/workflows/ios.yml"]
   pull_request:
-    paths: ["ios/**", ".github/workflows/ios.yml"]
+    paths: ["ios/**", "*.py", "tests/**", ".github/workflows/ios.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Desktop offline regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Existing acquisition and review checks
+        run: python colorado_dashboard.py --self-test
   build:
     runs-on: macos-15-intel
     steps:

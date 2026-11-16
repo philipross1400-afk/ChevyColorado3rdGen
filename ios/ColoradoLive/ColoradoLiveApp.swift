@@ -9,9 +9,14 @@ struct ColoradoLiveApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DashboardView(model: model)
+            TabView {
+                DashboardView(model: model).tabItem { Label("Live", systemImage: "gauge.with.dots.needle.50percent") }
+                RecordingLibraryView(live: model).tabItem { Label("Recordings", systemImage: "waveform.path") }
+                NavigationStack { CapabilityView(snapshot: model.capabilities, quality: model.signalStatus) }
+                    .tabItem { Label("Capabilities", systemImage: "list.bullet.clipboard") }
+            }
                 .preferredColorScheme(.dark)
-                .onChange(of: scenePhase) { phase in
+                .onChange(of: scenePhase) { _, phase in
                     if phase != .active { model.stop() }
                 }
         }
@@ -20,8 +25,9 @@ struct ColoradoLiveApp: App {
 
 struct DashboardView: View {
     @ObservedObject var model: LiveModel
+    @State private var editingLayout = false
     private let accent = Color(red: 0.33, green: 0.85, blue: 0.82)
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    private var columns: [GridItem] { Array(repeating: GridItem(.flexible()), count: model.layout.large_cards ? 1 : 2) }
 
     var body: some View {
         NavigationStack {
@@ -34,11 +40,13 @@ struct DashboardView: View {
                     }
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         LazyVGrid(columns: columns, spacing: 12) {
-                            gauge("SPEED", value: value(0x0D, at: context.date), unit: "mph", range: 0...120)
-                            gauge("ENGINE", value: value(0x0C, at: context.date), unit: "RPM", range: 0...6000)
-                            gauge("BOOST / VACUUM", value: model.running ? OBD.boost(model.readings, now: context.date) : nil,
-                                  unit: "psi gauge", range: -15...30)
-                            gauge("COOLANT", value: value(0x05, at: context.date), unit: "°F", range: 100...260)
+                            ForEach(model.layout.signals, id: \.self) { key in
+                                if let signal = GaugeSignal.find(key) {
+                                    gauge(signal.name.uppercased(), value: signal.pid.map { value($0, at: context.date) } ??
+                                            (model.running ? OBD.boost(model.readings, now: context.date) : nil),
+                                          unit: signal.unit, range: signal.range)
+                                }
+                            }
                         }
                     }
                     connection
@@ -71,7 +79,8 @@ struct DashboardView: View {
             .background(Color(red: 0.063, green: 0.09, blue: 0.125))
             .tint(accent)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Text("3RD GEN").font(.caption.bold()).foregroundStyle(.secondary) }
+            .toolbar { Button("Layout", systemImage: "slider.horizontal.3") { editingLayout = true } }
+            .sheet(isPresented: $editingLayout) { LayoutEditor(layout: $model.layout) }
             .alert("Connection or recording issue", isPresented: Binding(
                 get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } }
             )) { Button("OK") { model.errorMessage = nil } } message: { Text(model.errorMessage ?? "") }
@@ -88,10 +97,20 @@ struct DashboardView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Toggle("Performance polling", isOn: $model.performance).disabled(model.running)
+            if !model.running {
+                TextField("Recording name", text: $model.recordingName)
+                TextField("Session notes", text: $model.recordingNotes, axis: .vertical)
+                Picker("Fuel in tank", selection: $model.fuel) {
+                    ForEach(["Unknown", "87 AKI", "89 AKI", "91 AKI", "93 AKI", "Mixed / see notes"], id: \.self) { Text($0) }
+                }
+            }
             Toggle("Parked setup confirmed", isOn: $model.parked).disabled(model.running)
             Text("Apply the parking brake, close other OBD apps, and idle outdoors. Set up before moving; passenger operation only. Switching away from this app stops polling and saves the recording.")
                 .font(.footnote).foregroundStyle(.secondary)
             if model.running {
+                TextField("Event label", text: $model.markerLabel)
+                TextField("Event note", text: $model.markerNote)
+                Button("Mark event (\(model.markerCount) saved)", systemImage: "flag", action: model.markEvent)
                 Button("Stop & save", systemImage: "stop.circle", action: model.stop)
                     .buttonStyle(.borderedProminent)
             } else {
