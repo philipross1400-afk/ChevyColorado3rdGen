@@ -1,6 +1,6 @@
 # Colorado Live for iOS · development version
 
-Native SwiftUI live dashboard for iPhone and iPad (iOS 17+), designed for a **direct OBDLink MX+ connection** through Apple's External Accessory framework. No laptop relay or server is used. The existing Windows application is unchanged.
+Native SwiftUI live dashboard for iPhone and iPad (iOS 17+), designed for a **direct OBDLink MX+ connection** through Apple's External Accessory framework. No laptop relay or server is used. Windows v0.7 uses matching presets and a portable recording format.
 
 This is an initial implementation, **not a verified working MX+ release**. The Linux development environment cannot compile Apple's frameworks, sign the app, run the iOS simulator, or test the adapter. Do not infer hardware compatibility from the presence of transport code.
 
@@ -36,11 +36,16 @@ The UI runs without an adapter, with empty gauges and a connection setup message
 
 - Read-only finite command allowlist, protocol-7 check, ECM identity check, standard PID support discovery, sequential Performance/Overview polling, eight-second exchange timeout, and reply-size limit.
 - Sensor conversions and extended PID 67/68/87 channels ported from the desktop source; extended MAP preferred for asynchronous boost calculation.
-- Native gauges and sensor list with quality/age handling. Suspect, missing, stale, and disconnected values are not shown as live readings.
+- Saved gauge layouts, four matching desktop presets, larger cards, and a sensor list with quality/age handling. Suspect, missing, stale, and disconnected values are not shown as live readings.
 - Local `sensors.csv`, `session.json`, and `raw.jsonl` recordings under Documents/dashboard_logs. Share CSV after stopping; retrieve the full session folder through Files/Finder file sharing. No cloud upload.
 - CSV columns match the desktop log viewer. App backgrounding, user stop, transport failures, and log-write failures end polling. Background acquisition is intentionally absent in this first version.
 
-Not yet ported: in-app offline CSV review/graphs, TCM identity discovery, and fuel/notes settings. Existing desktop log review can open the exported sensor CSV, including derived boost rows. Oil pressure, knock, transmission temperature, gear, and slip remain unavailable. Readings are unvalidated and not a diagnosis.
+- Recordings library with name/notes search, folder/CSV import, synchronized playback at 0.5×–4×, same-unit signal graphs with bounded min/max buckets, event navigation, metadata editing, and CSV/session-folder sharing.
+- Recording names, fuel grade, notes and live timestamped event markers. Vehicle capabilities show saved ECM discovery plus current channel quality.
+
+Import the full session folder in the Recordings tab to preserve `session.json` and `events.jsonl`. Standalone CSV import preserves samples only. Imports are copied into the app library; editing details does not change the original imported CSV. See [the shared format](../docs/recording-format.md).
+
+Not yet ported: TCM identity discovery. Existing desktop log review can open the exported sensor CSV, including derived boost rows. Oil pressure, knock, transmission temperature, gear, and slip remain unavailable. Readings are unvalidated and not a diagnosis.
 
 ## Verification
 

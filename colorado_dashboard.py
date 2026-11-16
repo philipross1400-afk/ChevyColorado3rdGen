@@ -15,6 +15,7 @@ from app_paths import logs_directory, app_directory
 from colorado_log_viewer import LogReview
 from colorado_features import (PRESETS, UNVERIFIED, gauge_catalog, normalize_layout,
                                read_json, write_json, append_marker, usable)
+from colorado_widgets import scroll_page
 
 # PID: label, units, byte count, conversion, polling interval seconds
 SENSORS = {
@@ -345,10 +346,14 @@ class Dashboard:
         style.map("TNotebook.Tab", background=[("selected", "#294455")], foreground=[("selected", TEXT)])
         tabs = ttk.Notebook(root)
         tabs.pack(fill="both", expand=True)
-        outer = ttk.Frame(tabs, padding=18)
-        tabs.add(outer, text="Live Dashboard")
-        self.log_review = LogReview(tabs)
-        tabs.add(self.log_review, text="Log Review")
+        live_page, live_content = scroll_page(tabs)
+        outer = ttk.Frame(live_content, padding=18)
+        outer.pack(fill="both", expand=True)
+        tabs.add(live_page, text="Live Dashboard")
+        review_page, review_content = scroll_page(tabs)
+        self.log_review = LogReview(review_content)
+        self.log_review.pack(fill="both", expand=True)
+        tabs.add(review_page, text="Log Review")
         capability = ttk.Frame(tabs, padding=18)
         tabs.add(capability, text="Vehicle Capabilities")
         ttk.Label(capability, text="VEHICLE / CAPABILITIES", font=("Segoe UI", 23, "bold"), foreground=TEXT).pack(anchor="w")
@@ -361,6 +366,9 @@ class Dashboard:
             self.capabilities.heading(key, text=label)
         self.capabilities.column("#0", width=260)
         self.capabilities.column("pid", width=110)
+        capability_scroll = ttk.Scrollbar(capability, orient="vertical", command=self.capabilities.yview)
+        self.capabilities.configure(yscrollcommand=capability_scroll.set)
+        capability_scroll.pack(side="right", fill="y", pady=12)
         self.capabilities.pack(fill="both", expand=True, pady=12)
         for pid, spec in SENSORS.items():
             self.capabilities.insert("", "end", iid=str(pid), text=spec[0], values=(f"01{pid if pid < 256 else pid >> 8:02X}", "Not checked", "—"))
@@ -483,6 +491,9 @@ class Dashboard:
         large = tk.BooleanVar(value=self.layout["large_cards"])
         ttk.Checkbutton(frame, text="Larger gauge cards", variable=large).pack(anchor="w", pady=8)
         def save():
+            if all(v.get() == "Hidden" for v in choices):
+                messagebox.showinfo("Dashboard layout", "Keep at least one gauge visible.", parent=window)
+                return
             layout = normalize_layout({"signals": [reverse[v.get()] for v in choices if v.get() in reverse], "large_cards": large.get()}, self.catalog)
             try:
                 write_json(self.layout_path, layout)
@@ -579,6 +590,10 @@ class Dashboard:
         self.marker_button.config(state="disabled")
         self.name_box.config(state="normal")
         self.status.set(text)
+        if self.capability_info.get().startswith("Discovering"):
+            self.capability_info.set("Discovery did not complete. No vehicle support results confirmed for this session.")
+            for pid in SENSORS:
+                self.capabilities.set(str(pid), "support", "Not confirmed")
         self.log_review.refresh()
 
     def handle(self, event):
@@ -773,6 +788,6 @@ if __name__ == "__main__":
         from colorado_log_viewer import self_test as review_self_test
         review_self_test()
         if args.test_report:
-            Path(args.test_report).write_text(json.dumps({"version":"0.6", "offline_checks":"passed", "hardware_contacted":False}), encoding="utf-8")
+            Path(args.test_report).write_text(json.dumps({"version":"0.7", "offline_checks":"passed", "hardware_contacted":False}), encoding="utf-8")
     else:
         Dashboard(tk.Tk()).root.mainloop()

@@ -13,7 +13,9 @@ struct LayoutEditor: View {
                     }
                 }
                 Section("Gauges · drag to reorder") {
-                    ForEach(layout.signals, id: \.self) { key in Text(GaugeSignal.find(key)?.name ?? key) }
+                    ForEach(layout.signals, id: \.self) { key in
+                        Text(GaugeSignal.find(key)?.name ?? key).deleteDisabled(layout.signals.count == 1)
+                    }
                         .onMove { indices, destination in layout.signals.move(fromOffsets: indices, toOffset: destination) }
                         .onDelete { indices in
                             let remaining = layout.signals.enumerated().filter { !indices.contains($0.offset) }.map(\.element)

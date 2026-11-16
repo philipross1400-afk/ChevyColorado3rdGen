@@ -50,7 +50,7 @@ class RecordingTests(unittest.TestCase):
 
     def test_same_portable_session_fixture_as_swift(self):
         path = Path(__file__).parents[1] / "ios/ColoradoCore/Tests/ColoradoCoreTests/session-fixture.json"
-        fixture = json.loads(path.read_text())
+        fixture = json.loads(path.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as folder:
             folder = Path(folder)
             (folder / "sensors.csv").write_text(fixture["csv"], encoding="utf-8")

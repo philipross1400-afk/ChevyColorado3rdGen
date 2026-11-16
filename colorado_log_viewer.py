@@ -391,10 +391,14 @@ class LogReview(ttk.Frame):
 
     def reset_page(self):
         self.page=0
+        self.cursor.set(0)
         self.redraw()
 
     def move(self,delta):
         self.page+=delta
+        if self.recording is not None:
+            low, _, self.page, _ = window_bounds(self.recording["start"], self.recording["end"], WINDOWS[self.window.get()], self.page)
+            self.cursor.set(low-self.recording["start"])
         self.redraw()
 
     def redraw(self):
