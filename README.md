@@ -1,5 +1,7 @@
 # Chevy Colorado Dashboard v0.6
 
+An initial native iPhone/iPad implementation is in [ios/](ios/README.md). It targets a direct OBDLink MX+ connection; manufacturer accessory protocol configuration, a Mac/Xcode build, and physical-device verification are still required.
+
 A Windows Python dashboard and offline recording viewer developed with a 2023 Chevrolet Colorado and OBDLink MX+.
 
 ## Run

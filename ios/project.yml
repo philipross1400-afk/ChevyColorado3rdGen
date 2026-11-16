@@ -1,0 +1,47 @@
+name: ColoradoLive
+options:
+  bundleIdPrefix: com.coloradolive
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  ColoradoCore:
+    path: ColoradoCore
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    OBDLINK_ACCESSORY_PROTOCOL: ""
+targets:
+  ColoradoLive:
+    type: application
+    platform: iOS
+    sources: [ColoradoLive]
+    dependencies:
+      - package: ColoradoCore
+      - sdk: ExternalAccessory.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.coloradolive.viewer
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: ColoradoLive/Info.plist
+      properties:
+        CFBundleDisplayName: Colorado Live
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedExternalAccessoryProtocols:
+          - $(OBDLINK_ACCESSORY_PROTOCOL)
+        NSBluetoothAlwaysUsageDescription: Connect to your paired OBDLink MX+ to read vehicle sensor data.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+schemes:
+  ColoradoLive:
+    build:
+      targets:
+        ColoradoLive: all

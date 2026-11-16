@@ -1,0 +1,924 @@
+[
+  {
+    "pid": 12,
+    "raw": "18DAF11104410C0000\r>",
+    "readings": [
+      {
+        "pid": 12,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 12,
+    "raw": "18DAF11104410C0101\r>",
+    "readings": [
+      {
+        "pid": 12,
+        "value": 64.25,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 12,
+    "raw": "18DAF11104410C5050\r>",
+    "readings": [
+      {
+        "pid": 12,
+        "value": 5140.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 12,
+    "raw": "18DAF11104410C8080\r>",
+    "readings": [
+      {
+        "pid": 12,
+        "value": 8224.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 12,
+    "raw": "18DAF11104410CFFFF\r>",
+    "readings": [
+      {
+        "pid": 12,
+        "value": 16383.75,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 13,
+    "raw": "18DAF11103410D00\r>",
+    "readings": [
+      {
+        "pid": 13,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 13,
+    "raw": "18DAF11103410D01\r>",
+    "readings": [
+      {
+        "pid": 13,
+        "value": 0.621371192237334,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 13,
+    "raw": "18DAF11103410D50\r>",
+    "readings": [
+      {
+        "pid": 13,
+        "value": 49.709695378986716,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 13,
+    "raw": "18DAF11103410D80\r>",
+    "readings": [
+      {
+        "pid": 13,
+        "value": 79.53551260637875,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 13,
+    "raw": "18DAF11103410DFF\r>",
+    "readings": [
+      {
+        "pid": 13,
+        "value": 158.44965402052014,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 5,
+    "raw": "18DAF11103410500\r>",
+    "readings": [
+      {
+        "pid": 5,
+        "value": -40.0,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 5,
+    "raw": "18DAF11103410501\r>",
+    "readings": [
+      {
+        "pid": 5,
+        "value": -38.2,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 5,
+    "raw": "18DAF11103410550\r>",
+    "readings": [
+      {
+        "pid": 5,
+        "value": 104.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 5,
+    "raw": "18DAF11103410580\r>",
+    "readings": [
+      {
+        "pid": 5,
+        "value": 190.4,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 5,
+    "raw": "18DAF111034105FF\r>",
+    "readings": [
+      {
+        "pid": 5,
+        "value": 419.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 66,
+    "raw": "18DAF1110441420000\r>",
+    "readings": [
+      {
+        "pid": 66,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 66,
+    "raw": "18DAF1110441420101\r>",
+    "readings": [
+      {
+        "pid": 66,
+        "value": 0.257,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 66,
+    "raw": "18DAF1110441425050\r>",
+    "readings": [
+      {
+        "pid": 66,
+        "value": 20.56,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 66,
+    "raw": "18DAF1110441428080\r>",
+    "readings": [
+      {
+        "pid": 66,
+        "value": 32.896,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 66,
+    "raw": "18DAF111044142FFFF\r>",
+    "readings": [
+      {
+        "pid": 66,
+        "value": 65.535,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 11,
+    "raw": "18DAF11103410B00\r>",
+    "readings": [
+      {
+        "pid": 11,
+        "value": 0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 11,
+    "raw": "18DAF11103410B01\r>",
+    "readings": [
+      {
+        "pid": 11,
+        "value": 1,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 11,
+    "raw": "18DAF11103410B50\r>",
+    "readings": [
+      {
+        "pid": 11,
+        "value": 80,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 11,
+    "raw": "18DAF11103410B80\r>",
+    "readings": [
+      {
+        "pid": 11,
+        "value": 128,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 11,
+    "raw": "18DAF11103410BFF\r>",
+    "readings": [
+      {
+        "pid": 11,
+        "value": 255,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 51,
+    "raw": "18DAF11103413300\r>",
+    "readings": [
+      {
+        "pid": 51,
+        "value": 0,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 51,
+    "raw": "18DAF11103413301\r>",
+    "readings": [
+      {
+        "pid": 51,
+        "value": 1,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 51,
+    "raw": "18DAF11103413350\r>",
+    "readings": [
+      {
+        "pid": 51,
+        "value": 80,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 51,
+    "raw": "18DAF11103413380\r>",
+    "readings": [
+      {
+        "pid": 51,
+        "value": 128,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 51,
+    "raw": "18DAF111034133FF\r>",
+    "readings": [
+      {
+        "pid": 51,
+        "value": 255,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 17,
+    "raw": "18DAF11103411100\r>",
+    "readings": [
+      {
+        "pid": 17,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 17,
+    "raw": "18DAF11103411101\r>",
+    "readings": [
+      {
+        "pid": 17,
+        "value": 0.39215686274509803,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 17,
+    "raw": "18DAF11103411150\r>",
+    "readings": [
+      {
+        "pid": 17,
+        "value": 31.372549019607842,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 17,
+    "raw": "18DAF11103411180\r>",
+    "readings": [
+      {
+        "pid": 17,
+        "value": 50.19607843137255,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 17,
+    "raw": "18DAF111034111FF\r>",
+    "readings": [
+      {
+        "pid": 17,
+        "value": 100.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 4,
+    "raw": "18DAF11103410400\r>",
+    "readings": [
+      {
+        "pid": 4,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 4,
+    "raw": "18DAF11103410401\r>",
+    "readings": [
+      {
+        "pid": 4,
+        "value": 0.39215686274509803,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 4,
+    "raw": "18DAF11103410450\r>",
+    "readings": [
+      {
+        "pid": 4,
+        "value": 31.372549019607842,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 4,
+    "raw": "18DAF11103410480\r>",
+    "readings": [
+      {
+        "pid": 4,
+        "value": 50.19607843137255,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 4,
+    "raw": "18DAF111034104FF\r>",
+    "readings": [
+      {
+        "pid": 4,
+        "value": 100.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 15,
+    "raw": "18DAF11103410F00\r>",
+    "readings": [
+      {
+        "pid": 15,
+        "value": -40.0,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 15,
+    "raw": "18DAF11103410F01\r>",
+    "readings": [
+      {
+        "pid": 15,
+        "value": -38.2,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 15,
+    "raw": "18DAF11103410F50\r>",
+    "readings": [
+      {
+        "pid": 15,
+        "value": 104.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 15,
+    "raw": "18DAF11103410F80\r>",
+    "readings": [
+      {
+        "pid": 15,
+        "value": 190.4,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 15,
+    "raw": "18DAF11103410FFF\r>",
+    "readings": [
+      {
+        "pid": 15,
+        "value": 419.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 16,
+    "raw": "18DAF1110441100000\r>",
+    "readings": [
+      {
+        "pid": 16,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 16,
+    "raw": "18DAF1110441100101\r>",
+    "readings": [
+      {
+        "pid": 16,
+        "value": 2.57,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 16,
+    "raw": "18DAF1110441105050\r>",
+    "readings": [
+      {
+        "pid": 16,
+        "value": 205.6,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 16,
+    "raw": "18DAF1110441108080\r>",
+    "readings": [
+      {
+        "pid": 16,
+        "value": 328.96,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 16,
+    "raw": "18DAF111044110FFFF\r>",
+    "readings": [
+      {
+        "pid": 16,
+        "value": 655.35,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 14,
+    "raw": "18DAF11103410E00\r>",
+    "readings": [
+      {
+        "pid": 14,
+        "value": -64.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 14,
+    "raw": "18DAF11103410E01\r>",
+    "readings": [
+      {
+        "pid": 14,
+        "value": -63.5,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 14,
+    "raw": "18DAF11103410E50\r>",
+    "readings": [
+      {
+        "pid": 14,
+        "value": -24.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 14,
+    "raw": "18DAF11103410E80\r>",
+    "readings": [
+      {
+        "pid": 14,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 14,
+    "raw": "18DAF11103410EFF\r>",
+    "readings": [
+      {
+        "pid": 14,
+        "value": 63.5,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 6,
+    "raw": "18DAF11103410600\r>",
+    "readings": [
+      {
+        "pid": 6,
+        "value": -100.0,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 6,
+    "raw": "18DAF11103410601\r>",
+    "readings": [
+      {
+        "pid": 6,
+        "value": -99.21875,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 6,
+    "raw": "18DAF11103410650\r>",
+    "readings": [
+      {
+        "pid": 6,
+        "value": -37.5,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 6,
+    "raw": "18DAF11103410680\r>",
+    "readings": [
+      {
+        "pid": 6,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 6,
+    "raw": "18DAF111034106FF\r>",
+    "readings": [
+      {
+        "pid": 6,
+        "value": 99.21875,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 7,
+    "raw": "18DAF11103410700\r>",
+    "readings": [
+      {
+        "pid": 7,
+        "value": -100.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 7,
+    "raw": "18DAF11103410701\r>",
+    "readings": [
+      {
+        "pid": 7,
+        "value": -99.21875,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 7,
+    "raw": "18DAF11103410750\r>",
+    "readings": [
+      {
+        "pid": 7,
+        "value": -37.5,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 7,
+    "raw": "18DAF11103410780\r>",
+    "readings": [
+      {
+        "pid": 7,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 7,
+    "raw": "18DAF111034107FF\r>",
+    "readings": [
+      {
+        "pid": 7,
+        "value": 99.21875,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 47,
+    "raw": "18DAF11103412F00\r>",
+    "readings": [
+      {
+        "pid": 47,
+        "value": 0.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 47,
+    "raw": "18DAF11103412F01\r>",
+    "readings": [
+      {
+        "pid": 47,
+        "value": 0.39215686274509803,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 47,
+    "raw": "18DAF11103412F50\r>",
+    "readings": [
+      {
+        "pid": 47,
+        "value": 31.372549019607842,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 47,
+    "raw": "18DAF11103412F80\r>",
+    "readings": [
+      {
+        "pid": 47,
+        "value": 50.19607843137255,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 47,
+    "raw": "18DAF11103412FFF\r>",
+    "readings": [
+      {
+        "pid": 47,
+        "value": 100.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 103,
+    "raw": "18DAF111054167035064\r>",
+    "readings": [
+      {
+        "pid": 26369,
+        "value": 104.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 26370,
+        "value": 140.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 103,
+    "raw": "18DAF111054167010050\r>",
+    "readings": [
+      {
+        "pid": 26369,
+        "value": -40.0,
+        "quality": "Suspect endpoint / verify"
+      },
+      {
+        "pid": 26370,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      }
+    ]
+  },
+  {
+    "pid": 104,
+    "raw": "18DAF111100941683F005A64\r18DAF111216E7882\r>",
+    "readings": [
+      {
+        "pid": 26625,
+        "value": -40.0,
+        "quality": "Suspect endpoint / verify"
+      },
+      {
+        "pid": 26626,
+        "value": 122.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 26627,
+        "value": 140.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 26628,
+        "value": 158.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 26629,
+        "value": 176.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 26630,
+        "value": 194.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 104,
+    "raw": "18DAF1111009416800000000\r18DAF11121000000\r>",
+    "readings": [
+      {
+        "pid": 26625,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 26626,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 26627,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 26628,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 26629,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 26630,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      }
+    ]
+  },
+  {
+    "pid": 135,
+    "raw": "18DAF1110741870319003200\r>",
+    "readings": [
+      {
+        "pid": 34561,
+        "value": 200.0,
+        "quality": "Received / unvalidated"
+      },
+      {
+        "pid": 34562,
+        "value": 400.0,
+        "quality": "Received / unvalidated"
+      }
+    ]
+  },
+  {
+    "pid": 135,
+    "raw": "18DAF111074187030000FFFF\r>",
+    "readings": [
+      {
+        "pid": 34561,
+        "value": 0.0,
+        "quality": "Suspect endpoint / verify"
+      },
+      {
+        "pid": 34562,
+        "value": 2047.96875,
+        "quality": "Suspect endpoint / verify"
+      }
+    ]
+  },
+  {
+    "pid": 135,
+    "raw": "18DAF1110741870019003200\r>",
+    "readings": [
+      {
+        "pid": 34561,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      },
+      {
+        "pid": 34562,
+        "value": null,
+        "quality": "Sensor not supported by response flags"
+      }
+    ]
+  }
+]

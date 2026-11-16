@@ -1,0 +1,30 @@
+name: iOS checks
+
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test read-only decoder and desktop parity
+        run: swift test --package-path ios/ColoradoCore
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build iOS simulator app without signing
+        working-directory: ios
+        run: >-
+          xcodebuild -project ColoradoLive.xcodeproj -scheme ColoradoLive
+          -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO build
