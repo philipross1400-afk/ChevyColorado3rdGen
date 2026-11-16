@@ -1,0 +1,27 @@
+name: Windows checks
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["*.py", "tests/**", "requirements.txt", ".github/workflows/windows.yml"]
+  pull_request:
+    paths: ["*.py", "tests/**", "requirements.txt", ".github/workflows/windows.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Desktop logic and Tk interface regressions
+        run: python -m unittest discover -s tests -v
+      - name: Existing acquisition and review checks
+        run: python colorado_dashboard.py --self-test
+      - name: Read-only allowlist check
+        run: python colorado_readonly.py --self-test

@@ -10,6 +10,8 @@ sensors.csv
 raw.jsonl
 session.json
 tcm_inventory.json
+dashboard_settings.json
+dashboard_settings.json.tmp
 build/
 dist/
 *.spec
