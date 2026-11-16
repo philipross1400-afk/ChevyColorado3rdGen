@@ -1,0 +1,42 @@
+name: Desktop and iOS checks
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["ios/**", "*.py", "tests/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", "*.py", "tests/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Desktop offline regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Existing acquisition and review checks
+        run: python colorado_dashboard.py --self-test
+  build:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test read-only decoder and desktop parity
+        run: swift test --package-path ios/ColoradoCore
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build iOS simulator app without signing
+        working-directory: ios
+        run: >-
+          xcodebuild -project ColoradoLive.xcodeproj -scheme ColoradoLive
+          -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO build

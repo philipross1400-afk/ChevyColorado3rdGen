@@ -1,0 +1,6 @@
+ColoradoLive.xcodeproj/
+ColoradoLive/Info.plist
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate

@@ -8,9 +8,11 @@ from pathlib import Path
 import queue
 import statistics
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk, filedialog
 from app_paths import logs_directory
+from colorado_features import load_markers, sample_at, read_json, write_json
 
 BG, CARD, TEXT, MUTED = "#101720", "#182331", "#e8eff6", "#9aabbc"
 COLORS = ("#53d8d1", "#ffbe68", "#aaabff")
@@ -22,12 +24,16 @@ def load_recording(path):
     path = Path(path)
     if path.is_dir():
         path = path / "sensors.csv"
+    if path.stat().st_size > 64*1024*1024:
+        raise ValueError("This recording exceeds the 64 MB import limit.")
     groups, units, bad, total = {}, {}, 0, 0
     first, last, started = math.inf, -math.inf, None
     with path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if not {"timestamp", "sensor", "value", "units", "quality"}.issubset(reader.fieldnames or ()):
             raise ValueError("Choose a Colorado sensors.csv file. This file has a different column format.")
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError("Duplicate CSV columns")
         for row in reader:
             total += 1
             if total > 500000:
@@ -40,15 +46,15 @@ def load_recording(path):
                 name, unit = row["sensor"].strip(), row["units"].strip()
                 if not name:
                     raise ValueError("Missing sensor")
-                if started is None or time < first:
-                    started = stamp
-                first, last = min(first, time), max(last, time)
                 # Split a name when files contain different units or ECUs.
                 key = (name, unit, row.get("ecu", ""), row.get("pid", ""))
                 quality = row["quality"] or "Unknown quality"
                 value = float(row["value"]) if row["value"] else None
                 if value is not None and not math.isfinite(value):
                     raise ValueError("Non-finite reading")
+                if started is None or time < first:
+                    started = stamp
+                first, last = min(first, time), max(last, time)
                 good = quality == "Received / unvalidated" or quality.startswith("Derived from asynchronous")
                 if not good:
                     value = None
@@ -68,8 +74,10 @@ def load_recording(path):
             metadata = {}
     except (OSError, ValueError):
         pass
+    events, bad_events = load_markers(path.parent)
     return {"path": path, "series": groups, "units": units, "start": first, "end": last,
-            "started": started, "metadata": metadata, "bad_rows": bad, "rows": total}
+            "started": started, "metadata": metadata, "bad_rows": bad, "rows": total,
+            "events": events, "bad_events": bad_events}
 
 
 def window_bounds(start, end, width, page):
@@ -110,8 +118,10 @@ class LogReview(ttk.Frame):
         self.page = 0
         self.loading = False
         self.results = queue.Queue()
+        self.playing = False
+        self.play_clock = time.monotonic()
         ttk.Label(self, text="RECORDINGS  /  REVIEW", foreground=TEXT, font=("Segoe UI", 23, "bold")).pack(anchor="w")
-        ttk.Label(self, text="Review saved data without connecting to the truck. Original files stay unchanged.").pack(anchor="w", pady=(0,12))
+        ttk.Label(self, text="Review saved data without connecting to the truck. Sensor CSV files stay unchanged.").pack(anchor="w", pady=(0,12))
         row = ttk.Frame(self)
         row.pack(fill="x")
         ttk.Label(row, text="Recording").pack(side="left")
@@ -120,6 +130,7 @@ class LogReview(ttk.Frame):
         ttk.Button(row, text="Load recording", command=self.open_selected).pack(side="left", padx=4)
         ttk.Button(row, text="Import CSV…", command=self.import_csv).pack(side="left", padx=4)
         ttk.Button(row, text="Refresh list", command=self.refresh).pack(side="left", padx=4)
+        ttk.Button(row, text="Edit name / notes…", command=self.edit_notes).pack(side="left", padx=4)
         self.info = tk.StringVar(value="Choose an existing recording or import a Colorado CSV log.")
         ttk.Label(self, textvariable=self.info, wraplength=1050, foreground="#53d8d1").pack(anchor="w", pady=12)
         row = ttk.Frame(self)
@@ -140,6 +151,27 @@ class LogReview(ttk.Frame):
         box.bind("<<ComboboxSelected>>", lambda e: self.redraw())
         self.range_label = tk.StringVar(value="No recording loaded")
         ttk.Label(self, textvariable=self.range_label).pack(anchor="w", pady=8)
+        playback = ttk.Frame(self)
+        playback.pack(fill="x", pady=6)
+        self.play_button = ttk.Button(playback, text="Play", command=self.toggle_play)
+        self.play_button.pack(side="left")
+        self.play_speed = tk.StringVar(value="1×")
+        ttk.Combobox(playback, textvariable=self.play_speed, values=("0.5×", "1×", "2×", "4×"), state="readonly", width=5).pack(side="left", padx=8)
+        self.cursor = tk.DoubleVar(value=0)
+        self.scrubber = ttk.Scale(playback, variable=self.cursor, from_=0, to=1, command=self.seek)
+        self.scrubber.pack(side="left", fill="x", expand=True, padx=8)
+        self.cursor_label = tk.StringVar(value="00:00")
+        ttk.Label(playback, textvariable=self.cursor_label, width=10).pack(side="left")
+        self.snapshot = tk.StringVar(value="Playback uses the last recorded sample at or before the cursor; no interpolation.")
+        ttk.Label(self, textvariable=self.snapshot, foreground=TEXT, wraplength=1100).pack(anchor="w", pady=6)
+        event_row = ttk.Frame(self)
+        event_row.pack(fill="x", pady=4)
+        ttk.Label(event_row, text="Event markers").pack(side="left")
+        self.event_choice = ttk.Combobox(event_row, state="readonly", width=70)
+        self.event_choice.pack(side="left", fill="x", expand=True, padx=8)
+        self.event_choice.bind("<<ComboboxSelected>>", self.jump_event)
+        self.event_note = tk.StringVar()
+        ttk.Label(self, textvariable=self.event_note, wraplength=1100).pack(anchor="w")
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         side = ttk.Frame(body, width=260)
@@ -161,6 +193,7 @@ class LogReview(ttk.Frame):
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda e: self.redraw())
         self.canvas.bind("<Motion>", self.hover)
+        self.canvas.bind("<Button-1>", self.click_seek)
         self.hover_text = tk.StringVar(value="Move over the graph to inspect a reading.")
         ttk.Label(self, textvariable=self.hover_text, wraplength=1050).pack(anchor="w", pady=8)
         self.summary = ttk.Treeview(self, columns=("low","avg","peak","count"), height=3)
@@ -173,6 +206,7 @@ class LogReview(ttk.Frame):
         ttk.Label(self, text="Lines show recorded values or bucket means; whiskers retain each bucket’s min/max. Summaries use original samples.\nMissing/suspect readings are omitted, gaps are not interpolated, and different channels were sampled at different times.", wraplength=1050).pack(anchor="w", pady=5)
         self.refresh()
         self.after(100,self.poll_load)
+        self.after(100,self.play_tick)
 
     def refresh(self):
         current = self.record_choice.get()
@@ -181,7 +215,7 @@ class LogReview(ttk.Frame):
             if path not in paths:
                 paths.append(path)
         self.paths = paths
-        self.names = [p.parent.name + (" / " + p.name if p.name != "sensors.csv" else "") for p in paths]
+        self.names = [(read_json(p.parent / "session.json").get("name") or p.parent.name) + (" / " + p.name if p.name != "sensors.csv" else "") for p in paths]
         # Keep duplicate folder labels distinct for CSV imports from elsewhere.
         if len(set(self.names)) != len(self.names):
             self.names = [str(p) for p in paths]
@@ -205,6 +239,8 @@ class LogReview(ttk.Frame):
         if self.loading:
             return
         self.loading = True
+        self.playing = False
+        self.play_button.config(text="Play")
         self.info.set("Reading recording…")
         def run():
             try:
@@ -226,10 +262,115 @@ class LogReview(ttk.Frame):
                 self.refresh()
                 self.record_choice.current(self.paths.index(record["path"]))
                 self.page = 0
+                self.cursor.set(0)
+                self.scrubber.config(to=max(.001, record["end"]-record["start"]))
+                self.event_choice["values"] = [f"{elapsed(e['time']-record['start'])} • {e['label']}" for e in record["events"]]
+                self.event_choice.set("")
+                self.event_note.set(record["metadata"].get("notes", ""))
                 self.populate_signals()
+                self.update_cursor()
         except queue.Empty:
             pass
         self.after(100,self.poll_load)
+
+    def edit_notes(self):
+        if self.recording is None:
+            return
+        rec = self.recording
+        window = tk.Toplevel(self)
+        window.title("Recording details")
+        frame = ttk.Frame(window, padding=18)
+        frame.pack(fill="both", expand=True)
+        name = tk.StringVar(value=rec["metadata"].get("name", ""))
+        ttk.Label(frame, text="Name").pack(anchor="w")
+        ttk.Entry(frame, textvariable=name, width=60).pack(fill="x", pady=6)
+        ttk.Label(frame, text="Notes (saved in session.json; CSV remains unchanged)").pack(anchor="w")
+        notes = tk.Text(frame, width=60, height=8)
+        notes.insert("1.0", rec["metadata"].get("notes", ""))
+        notes.pack(fill="both", pady=6)
+        def save():
+            path = rec["path"].parent / "session.json"
+            metadata = read_json(path)
+            metadata.update(name=name.get().strip()[:120], notes=notes.get("1.0", "end-1c")[:10000])
+            try:
+                write_json(path, metadata)
+                rec["metadata"] = metadata
+                self.event_note.set(metadata["notes"])
+                self.refresh()
+                self.redraw()
+                window.destroy()
+            except OSError as exc:
+                self.event_note.set("Could not save notes: " + str(exc))
+        ttk.Button(frame, text="Save", command=save).pack(anchor="e")
+
+    def toggle_play(self):
+        if self.recording is None or self.loading:
+            return
+        if self.cursor.get() >= self.recording["end"]-self.recording["start"]:
+            self.cursor.set(0)
+        self.playing = not self.playing
+        self.play_clock = time.monotonic()
+        self.play_button.config(text="Pause" if self.playing else "Play")
+
+    def play_tick(self):
+        now = time.monotonic()
+        if self.playing and self.recording is not None:
+            end = self.recording["end"]-self.recording["start"]
+            self.cursor.set(min(end, self.cursor.get()+(now-self.play_clock)*float(self.play_speed.get().rstrip("×"))))
+            self.seek()
+            if self.cursor.get() >= end:
+                self.playing = False
+                self.play_button.config(text="Play")
+        self.play_clock = now
+        self.after(100, self.play_tick)
+
+    def seek(self, _=None):
+        if self.recording is None:
+            return
+        width = WINDOWS[self.window.get()]
+        page = min(max(0, math.ceil((self.recording["end"]-self.recording["start"])/(width or 1))-1), int(self.cursor.get()/width)) if width else 0
+        if page != self.page:
+            self.page = page
+            self.redraw()
+        self.update_cursor()
+
+    def jump_event(self, _=None):
+        index = self.event_choice.current()
+        if self.recording is not None and 0 <= index < len(self.recording["events"]):
+            event = self.recording["events"][index]
+            self.cursor.set(max(0, min(self.recording["end"]-self.recording["start"], event["time"]-self.recording["start"])))
+            self.event_note.set(event.get("note", ""))
+            self.seek()
+
+    def click_seek(self, event):
+        if self.recording is not None and getattr(self, "plot_series", None):
+            x0,x1,_,_,low,span = self.plot_geometry
+            if x0 <= event.x <= x1:
+                self.cursor.set(low+(event.x-x0)/(x1-x0)*span-self.recording["start"])
+                self.seek()
+
+    def update_cursor(self):
+        if self.recording is None:
+            return
+        rec = self.recording
+        stamp = rec["start"] + self.cursor.get()
+        self.cursor_label.set(elapsed(self.cursor.get()))
+        chunks = []
+        for name in ("Vehicle speed", "Engine speed", "Calculated boost / vacuum", "Coolant"):
+            matches = [(key, samples) for key, samples in rec["series"].items() if key[0] == name]
+            if not matches:
+                continue
+            # ECU/unit/PID splits stay separate, even when labels match.
+            for key, samples in matches:
+                sample = sample_at(samples, stamp, 15 if name == "Coolant" else 3)
+                chunks.append(f"{name}: {sample[1]:.1f} {key[1]} ({stamp-sample[0]:.1f}s old)" if sample else name+": —")
+        self.snapshot.set("RECORDED • " + " | ".join(chunks))
+        self.canvas.delete("playhead")
+        if getattr(self, "plot_series", None):
+            x0,x1,y0,y1,low,span = self.plot_geometry
+            if low <= stamp <= low+span:
+                x = x0+(stamp-low)/max(.001,span)*(x1-x0)
+                self.canvas.create_line(x,y0,x,y1,fill=TEXT,width=2,tags="playhead")
 
     def populate_signals(self):
         self.signal_list.delete(0,"end")
@@ -250,10 +391,14 @@ class LogReview(ttk.Frame):
 
     def reset_page(self):
         self.page=0
+        self.cursor.set(0)
         self.redraw()
 
     def move(self,delta):
         self.page+=delta
+        if self.recording is not None:
+            low, _, self.page, _ = window_bounds(self.recording["start"], self.recording["end"], WINDOWS[self.window.get()], self.page)
+            self.cursor.set(low-self.recording["start"])
         self.redraw()
 
     def redraw(self):
@@ -273,7 +418,7 @@ class LogReview(ttk.Frame):
         self.next.config(state="normal" if self.page<pages-1 else "disabled")
         self.range_label.set(f"Window {self.page+1} of {pages}  •  {elapsed(low-rec['start'])} – {elapsed(high-rec['start'])} elapsed")
         meta=rec["metadata"]
-        self.info.set(f"{rec['started'].strftime('%b %d, %Y • %I:%M:%S %p %z')}  |  Duration {elapsed(rec['end']-rec['start'])}  |  Fuel: {meta.get('fuel_in_tank','not recorded')}  |  Profile: {meta.get('profile','not recorded')}  |  {rec['bad_rows']} unreadable rows skipped")
+        self.info.set(f"{meta.get('name') or rec['path'].parent.name}  |  {rec['started'].strftime('%b %d, %Y • %I:%M:%S %p %z')}  |  Duration {elapsed(rec['end']-rec['start'])}  |  Fuel: {meta.get('fuel_in_tank','not recorded')}  |  Profile: {meta.get('profile','not recorded')}  |  {rec['bad_rows']} unreadable rows / {rec['bad_events']} invalid markers skipped")
         selected=list(self.signal_list.curselection())[:3]
         keys=[self.keys[i] for i in selected]
         if not keys:
@@ -336,6 +481,12 @@ class LogReview(ttk.Frame):
                 previous=point
             self.plot_series.append((key,points,color))
         self.plot_geometry=(x0,x1,y0,y1,low,span)
+        for event in rec["events"]:
+            if low <= event["time"] <= high:
+                xx=x(event["time"])
+                c.create_line(xx,y0,xx,y1,fill="#ffbe68",dash=(2,5))
+                c.create_text(xx,y0+12,text="◆",fill="#ffbe68")
+        self.update_cursor()
 
     def hover(self,event):
         if not self.plot_series:

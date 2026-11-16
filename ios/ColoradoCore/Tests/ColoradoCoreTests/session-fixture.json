@@ -1,0 +1,26 @@
+{
+  "csv": "﻿timestamp,ecu,pid,sensor,value,units,quality\r\n2026-01-01T00:00:04.000+00:00,18DAF111,010C,Engine speed,2000,RPM,Received / unvalidated\r\n2026-01-01T00:00:00.000+00:00,18DAF111,010C,Engine speed,1000,RPM,Received / unvalidated\r\n2026-01-01T00:00:02.000+00:00,18DAF111,010C,Engine speed,65535,RPM,Suspect endpoint / verify\r\n2026-01-01T00:00:01+00:00,18DAF111,0105,Coolant,104,°F,Received / unvalidated\r\n2026-01-01T00:00:03+00:00,18DAF118,custom,\"Quoted, \"\"sensor\"\"\nname\",3,kPa,Received / unvalidated\r\n2026-01-02T00:00:00+00:00,18DAF111,010C,Engine speed,NaN,RPM,Received / unvalidated\r\n2026-01-01T00:00:00,18DAF111,010C,Engine speed,1,RPM,Received / unvalidated\r\n",
+  "metadata": {
+    "schema_version": 1,
+    "name": "Portable ✓ session",
+    "notes": "Sample notes\nSecond line",
+    "fuel_in_tank": "91 AKI",
+    "profile": "Performance",
+    "capabilities": {
+      "name": "ECM-EngineControl",
+      "supported": [
+        5,
+        12,
+        135
+      ],
+      "active": [
+        5,
+        12,
+        34561,
+        34562
+      ],
+      "profile": "Performance"
+    }
+  },
+  "events": "{\"schema_version\": 1, \"id\": \"synthetic-marker\", \"timestamp\": \"2026-01-01T00:00:03.250Z\", \"label\": \"Shift \\u2713\", \"note\": \"Passenger marker, with \\\"quotes\\\"\"}\ninvalid-json\n"
+}
